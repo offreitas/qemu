@@ -368,3 +368,15 @@ option('qemu_ga_version', type: 'string', value: '',
 
 option('hexagon_idef_parser', type : 'boolean', value : true,
        description: 'use idef-parser to automatically generate TCG code for the Hexagon frontend')
+
+# SPDM
+option('spdm', type : 'feature', value : 'auto',
+       description: 'enable SPDM authentication')
+option('libspdm-srcdir', type : 'string', value : '',
+       description: 'LibSPDM source directory path to use')
+option('libspdm-builddir', type : 'string', value : '',
+       description: 'LibSPDM build directory path to use')
+option('libspdm-crypto', type : 'combo', value : 'mbedtls',
+       choices: ['mbedtls', 'openssl'],
+       description: 'LibSPDM cryptographic algorithm used')
+

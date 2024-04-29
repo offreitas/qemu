@@ -61,6 +61,10 @@ meson_options_help() {
   printf "%s\n" '                           cpu name [/usr/gnemul/qemu-%M]'
   printf "%s\n" '  --libdir=VALUE           Library directory [system default]'
   printf "%s\n" '  --libexecdir=VALUE       Library executable directory [libexec]'
+  printf "%s\n" '  --libspdm-builddir=VALUE LibSPDM build directory path to use'
+  printf "%s\n" '  --libspdm-crypto=CHOICE  LibSPDM cryptographic algorithm used [mbedtls]'
+  printf "%s\n" '                           (choices: mbedtls/openssl)'
+  printf "%s\n" '  --libspdm-srcdir=VALUE   LibSPDM source directory path to use'
   printf "%s\n" '  --localedir=VALUE        Locale data directory [share/locale]'
   printf "%s\n" '  --localstatedir=VALUE    Localstate data directory [/var/local]'
   printf "%s\n" '  --mandir=VALUE           Manual page directory [share/man]'
@@ -181,6 +185,7 @@ meson_options_help() {
   printf "%s\n" '  snappy          snappy compression support'
   printf "%s\n" '  sndio           sndio sound support'
   printf "%s\n" '  sparse          sparse checker'
+  printf "%s\n" '  spdm            enable SPDM authentication'
   printf "%s\n" '  spice           Spice server support'
   printf "%s\n" '  spice-protocol  Spice protocol support'
   printf "%s\n" '  stack-protector compiler-provided stack protection'
@@ -370,6 +375,9 @@ _meson_option_parse() {
     --disable-libnfs) printf "%s" -Dlibnfs=disabled ;;
     --enable-libpmem) printf "%s" -Dlibpmem=enabled ;;
     --disable-libpmem) printf "%s" -Dlibpmem=disabled ;;
+    --libspdm-builddir=*) quote_sh "-Dlibspdm-builddir=$2" ;;
+    --libspdm-crypto=*) quote_sh "-Dlibspdm-crypto=$2" ;;
+    --libspdm-srcdir=*) quote_sh "-Dlibspdm-srcdir=$2" ;;
     --enable-libssh) printf "%s" -Dlibssh=enabled ;;
     --disable-libssh) printf "%s" -Dlibssh=disabled ;;
     --enable-libudev) printf "%s" -Dlibudev=enabled ;;
@@ -480,6 +488,8 @@ _meson_option_parse() {
     --disable-sndio) printf "%s" -Dsndio=disabled ;;
     --enable-sparse) printf "%s" -Dsparse=enabled ;;
     --disable-sparse) printf "%s" -Dsparse=disabled ;;
+    --enable-spdm) printf "%s" -Dspdm=enabled ;;
+    --disable-spdm) printf "%s" -Dspdm=disabled ;;
     --enable-spice) printf "%s" -Dspice=enabled ;;
     --disable-spice) printf "%s" -Dspice=disabled ;;
     --enable-spice-protocol) printf "%s" -Dspice_protocol=enabled ;;

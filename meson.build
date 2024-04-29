@@ -547,6 +547,25 @@ if get_option('cfi')
   add_global_link_arguments(cfi_flags, native: false, language: all_languages)
 endif
 
+# SPDM flags 
+spdm_cflags = []
+have_libspdm = get_option('spdm').enabled()
+if have_libspdm 
+  if get_option('libspdm-srcdir') == ''
+    error('No source directory path to parameter libspdm-srcdir')
+  endif
+  if get_option('libspdm-builddir') == ''
+    error('No build directory path to parameter libspdm-builddir')
+  endif
+  if get_option('libspdm-crypto') != 'mbedtls' and \
+     get_option('libspdm-crypto') != 'openssl'
+     error('No cryptographic algorithm to SPDM, choose mbedtls or openssl. Default is mbedtls')
+  endif
+  spdm_cflags = ['-I@0@/include'.format(get_option('libspdm-srcdir')),
+                 '-I@0@/os_stub'.format(get_option('libspdm-srcdir'))]
+  add_global_arguments(spdm_cflags, native: false, language: all_languages)
+endif
+
 # Check further flags that make QEMU more robust against malicious parties
 
 hardening_flags = [
@@ -2324,6 +2343,7 @@ config_host_data.set('CONFIG_CFI', get_option('cfi'))
 config_host_data.set('CONFIG_SELINUX', selinux.found())
 config_host_data.set('CONFIG_XEN_BACKEND', xen.found())
 config_host_data.set('CONFIG_LIBDW', libdw.found())
+config_host_data.set('CONFIG_SPDM', have_libspdm)
 if xen.found()
   # protect from xen.version() having less than three components
   xen_version = xen.version().split('.') + ['0', '0']
@@ -2968,7 +2988,8 @@ host_kconfig = \
   (host_os == 'linux' ? ['CONFIG_LINUX=y'] : []) + \
   (multiprocess_allowed ? ['CONFIG_MULTIPROCESS_ALLOWED=y'] : []) + \
   (vfio_user_server_allowed ? ['CONFIG_VFIO_USER_SERVER_ALLOWED=y'] : []) + \
-  (hv_balloon ? ['CONFIG_HV_BALLOON_POSSIBLE=y'] : [])
+  (hv_balloon ? ['CONFIG_HV_BALLOON_POSSIBLE=y'] : []) + \
+  (have_libspdm ? ['CONFIG_SPDM=y'] : [])
 
 ignored = [ 'TARGET_XML_FILES', 'TARGET_ABI_DIR', 'TARGET_ARCH' ]
 
@@ -3768,6 +3789,25 @@ common_ss.add(qom, qemuutil)
 common_ss.add_all(when: 'CONFIG_SYSTEM_ONLY', if_true: [system_ss])
 common_ss.add_all(when: 'CONFIG_USER_ONLY', if_true: user_ss)
 
+spdm_libs = []
+if have_libspdm
+  spdm_libs = ['debuglib', 'malloclib', 'memlib', 'platform_lib_null', 'rnglib',
+               'spdm_common_lib', 'spdm_crypt_ext_lib', 'spdm_crypt_lib', 'spdm_device_secret_lib_sample',
+               'spdm_responder_lib', 'spdm_secured_message_lib', 'spdm_transport_mctp_lib', 'spdm_transport_pcidoe_lib']
+
+  if get_option('libspdm-crypto') == 'mbedtls'
+    spdm_libs += ['cryptlib_mbedtls', 'mbedcrypto', 'mbedtls', 'mbedx509']
+  endif
+
+  found_spdm_libs = []
+  foreach lib : spdm_libs 
+    found_spdm_libs += cc.find_library(lib, dirs : '@0@/lib'.format(get_option('libspdm-builddir')))
+  endforeach
+  spdm_dep = declare_dependency(dependencies: found_spdm_libs)
+  
+  common_ss.add(spdm_dep)
+endif
+
 # Note that this library is never used directly (only through extract_objects)
 # and is not built by default; therefore, source files not used by the build
 # configuration will be in build.ninja, but are never built by default.
@@ -4237,6 +4277,7 @@ endif
 summary_info += {'strip binaries':    get_option('strip')}
 summary_info += {'sparse':            sparse}
 summary_info += {'mingw32 support':   host_os == 'windows'}
+summary_info += {'SPDM CFLAGS':       spdm_cflags}
 summary(summary_info, bool_yn: true, section: 'Compilation')
 
 # snarf the cross-compilation information for tests
@@ -4335,6 +4376,7 @@ summary_info += {'AF_ALG support':    have_afalg}
 summary_info += {'rng-none':          get_option('rng_none')}
 summary_info += {'Linux keyring':     have_keyring}
 summary_info += {'Linux keyutils':    keyutils}
+summary_info += {'SPDM crypto':       get_option('libspdm-crypto')}
 summary(summary_info, bool_yn: true, section: 'Crypto')
 
 # UI
