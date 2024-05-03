@@ -51,4 +51,4 @@ config HV_BALLOON_POSSIBLE
     bool
 
 config SPDM
-  bool
+    bool

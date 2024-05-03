@@ -3414,6 +3414,7 @@ stub_ss = ss.source_set()
 trace_ss = ss.source_set()
 user_ss = ss.source_set()
 util_ss = ss.source_set()
+spdm_ss = ss.source_set()
 
 # accel modules
 qtest_module_ss = ss.source_set()
@@ -3569,6 +3570,11 @@ subdir('linux-user')
 # needed for fuzzing binaries
 subdir('tests/qtest/libqos')
 subdir('tests/qtest/fuzz')
+
+# SPDM
+if have_libspdm
+  subdir('spdm')
+endif
 
 # accel modules
 tcg_real_module_ss = ss.source_set()
@@ -3790,6 +3796,7 @@ common_ss.add_all(when: 'CONFIG_SYSTEM_ONLY', if_true: [system_ss])
 common_ss.add_all(when: 'CONFIG_USER_ONLY', if_true: user_ss)
 
 spdm_libs = []
+found_spdm_libs = []
 if have_libspdm
   spdm_libs = ['debuglib', 'malloclib', 'memlib', 'platform_lib_null', 'rnglib',
                'spdm_common_lib', 'spdm_crypt_ext_lib', 'spdm_crypt_lib', 'spdm_device_secret_lib_sample',
@@ -3799,13 +3806,20 @@ if have_libspdm
     spdm_libs += ['cryptlib_mbedtls', 'mbedcrypto', 'mbedtls', 'mbedx509']
   endif
 
-  found_spdm_libs = []
   foreach lib : spdm_libs 
     found_spdm_libs += cc.find_library(lib, dirs : '@0@/lib'.format(get_option('libspdm-builddir')))
   endforeach
-  spdm_dep = declare_dependency(dependencies: found_spdm_libs)
-  
-  common_ss.add(spdm_dep)
+  spdm_ext = declare_dependency(dependencies: found_spdm_libs)
+
+  spdm_ss = spdm_ss.apply({})
+  libspdm = static_library('spdm', sources: spdm_ss.sources() + genh,
+                           name_suffix: 'fa',
+                           dependencies: spdm_ss.dependencies(),
+                           build_by_default: false)
+  spdm = declare_dependency(link_whole: libspdm,
+                            dependencies: spdm_ext)
+  common_ss.add(spdm_ext)
+  common_ss.add(spdm)
 endif
 
 # Note that this library is never used directly (only through extract_objects)
